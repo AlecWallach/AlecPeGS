@@ -1,3 +1,4 @@
+%test
 function [particle] = AlecDiskFind(Rimg_prepro,Rimg,Gimg,wallMask,pxPerMeter,RS,RL,NsmallH,NlargeH,fsigma)
 
 
