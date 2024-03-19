@@ -1,6 +1,17 @@
-directory = '/Volumes/SD/DCIM/211MSDCF/';
+directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF";
 fileName='eventStruct.mat';
-file=load([directory,fileName]);
+file=load(fullfile(directory,fileName));
 event=file.event;
 
-disp(event(1).startFrame)
+maxFrames = strings(length(event),1);
+
+for n=1:length(event)
+    maxFrames(n,1) = event(n).startFrame(end-11:end);
+end
+
+disp(maxFrames)
+
+%Save maxFrames
+savePath = fullfile(directory, 'maxFrames');
+% Save the file
+save(savePath, 'maxFrames');

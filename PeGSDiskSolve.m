@@ -29,8 +29,8 @@ clear all %housekeeping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %which files are we processing ?
-directory = '/Volumes/SD/DCIM/211MSDCF/preprocessing files/';
-files = dir([directory, 'DSC*_preprocessing.mat']); 
+directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\preprocessing files";
+files = dir(fullfile(directory, 'DSC*_preprocessing.mat')); 
 
 %how much of the particle diameter is used to fit the synthetic image 
 %(1 = use everything). Change this parameter only if the fit doesn't work 
@@ -53,7 +53,7 @@ fitoptions = optimoptions('lsqnonlin','Algorithm','levenberg-marquardt','MaxIter
 nFrames = length(files); %how many files are we processing ?
 for frame = 1:nFrames %loop over these frames 
 
-    fileName = [directory,files(frame).name]; %which file/frame are we processing now ?
+    fileName = fullfile(directory,files(frame).name); %which file/frame are we processing now ?
     maskradius = maskradius / 2; %I did an unwise choice in naming this
     load(fileName); %load the particle data file to process
     pres=particle; %initialize a copy of the particle vector to mess around with
@@ -156,8 +156,8 @@ for frame = 1:nFrames %loop over these frames
                     pres(n).synthImg = imgFit;
         end
     end
+
     %save the result
-    save([fileName(1:end-17),'solved.mat'],'pres');
-    save(['/Volumes/SD/DCIM/211MSDCF/solved disks/', files(frame).name(1:end-17),'solved.mat'],'pres');
+    save(fullfile("C:\Users\Squishfolk\Desktop\Alec\211MSDCF\Solved Networks", [files(frame).name(1:end-18),'_solved.mat']),'pres');
 end
 
