@@ -1,3 +1,6 @@
+# This program determines the angle of a packing using the positions of the particles at the top of the packing.
+# This only works if particle detection has already been completed.
+
 directory = '/Volumes/SD/DCIM/207ND810/preprocessing files/';
 imDir = '/Volumes/SD/DCIM/207ND810/';
 files = dir([directory, 'DSC_*_preprocessing.mat']); 
