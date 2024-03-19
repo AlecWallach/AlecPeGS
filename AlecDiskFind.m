@@ -160,10 +160,10 @@ function [particle] = AlecDiskFind(Rimg_prepro,Rimg,Gimg,wallMask,pxPerMeter,RS,
             y2=particleS(j).y;
             r2=particleS(j).r;
             m2=particleS(j).metric;
-            if sqrt((x1-x2)^2+(y1-y2)^2) < r1+0.5*r2 && m2>2*m1
+            if sqrt((x1-x2)^2+(y1-y2)^2) < r1+0.5*r2 && m2>1.25*m1
                 numParticlesPartialEnclosed=numParticlesPartialEnclosed+1;
             end
-            if sqrt((x1-x2)^2+(y1-y2)^2) < r1-0.8*r2 && m2>2*m1
+            if sqrt((x1-x2)^2+(y1-y2)^2) < r1-0.8*r2 && m2>1.25*m1
                 numParticlesFullyEnclosed=numParticlesFullyEnclosed+1;
             end
             j=j+1;
