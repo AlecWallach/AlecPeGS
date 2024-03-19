@@ -6,10 +6,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %User Inputs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-directory = '/Volumes/SD/DCIM/212MSDCF/';
-preProDirectory='/Volumes/SD/DCIM/212MSDCF/PreProImages/';
-files = dir([directory, 'DSC*.JPG']);
-preProFiles=dir([preProDirectory,'DSC*.jpg']);
+directory = '/Volumes/SD/DCIM/211MSDCF/';
+preProDirectory='/Volumes/SD/DCIM/211MSDCF/PreProImages/';
+files = dir(fullfile(directory, 'DSC*.JPG'));
+preProFiles=dir(fullfile(preProDirectory,'DSC*.jpg'));
 nFrames = length(files); %how many files are we processing ?
 
 %Do we want to make angle vs. time animation
@@ -105,7 +105,10 @@ for frame = 1:nFrames %Loops for total number of images
     packing(frame).packingAngle=theta;
     packing(frame).packingAngleDegrees=theta*180/pi;
 
+
+
 end
 
 %Save packing structure array
-%save([directory,'packingStruct'],'packing');
+save([directory,'packingStruct'],'packing');
+
