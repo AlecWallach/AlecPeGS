@@ -1,0 +1,134 @@
+directory = '/Volumes/SD/DCIM/209ND810/preprocessing files/';
+imDir = '/Volumes/SD/DCIM/209ND810/';
+files = dir([directory, 'DSC_4217_preprocessing.mat']); 
+imageFiles = dir([imDir,'DSC_217.JPG']);
+
+nFrames = length(files); %how many files are we processing ?
+thetas=zeros(nFrames,4);
+
+close all;
+
+for frame = 1:nFrames %loop over these frames 
+
+    fileName = [directory,files(frame).name]; %which file/frame are we processing now ?
+    imFileName = [imDir,imageFiles(frame).name];
+    img = imread(imFileName);
+    load(fileName);
+
+    N=length(particle);
+    centers=zeros(N,2);
+    for n=1:N
+        centers(n,1)=particle(n).x;
+        centers(n,2)=particle(n).y;
+    end
+
+end
+
+    %{
+
+    %Find bounding box of packing
+    xmin=min(centers(:,1))+450;
+    xmax=max(centers(:,1))-450;
+    ymin=min(centers(:,2));
+    ymax=max(centers(:,2));
+
+    %Divide packing into 10 strips and identify particles at the top of
+    %each strip
+    %Do this for 3 different top layer thicknesses (100px each)
+    for h=1:4
+        topParticles=[];
+        interval=(xmax-xmin)/21;
+        for x=xmin:interval:xmax
+            particlesInCol=[];
+            for n=1:N
+                if centers(n,1)>x && centers(n,1)<x + interval
+                    particlesInCol=[particlesInCol; particle(n)];
+                end
+            end
+            particlesInColYCoord=[];
+            for j=1:length(particlesInCol)
+                particlesInColYCoord=[particlesInColYCoord; particlesInCol(j).y];
+            end
+            ColYmin=min(particlesInColYCoord);
+            for j=1:length(particlesInCol)
+                if particlesInCol(j).y <= ColYmin+(100*h)
+                    topParticles=[topParticles; [particlesInCol(j).x particlesInCol(j).y]]; 
+                end
+            end
+        end
+    
+    
+        x=zeros(length(topParticles),1);
+        y=zeros(length(topParticles),1);
+        for n=1:length(topParticles)
+            x(n)=topParticles(n,1);
+            y(n)=topParticles(n,2);
+        end
+        
+
+        %Fit a line to the top particles in the packing
+        i=linspace(xmin-500,xmax+500);
+        P=polyfit(x,y,1);
+        thetas(frame,h)=atand(abs(P(1)));
+
+        %show plot of fit with all 4 top layer thicknesses
+        if frame==1
+        figure(1)
+        %subplot(2,2,h)
+        imshow(img)
+        hold on
+        scatter(x,y,'filled','r')
+        plot(i,P(1)*i+P(2),'b','linewidth',3)
+        text(3000,1000,sprintf('theta=%.3f',thetas(frame,h)),Color='white',FontSize=14);
+        hold off
+        end
+    end
+        
+end
+    
+
+
+%Find avg/min/max theta
+x=zeros(nFrames,1);
+meanThetas=zeros(nFrames,1);
+ymin=zeros(nFrames,1);
+ymax=zeros(nFrames,1);
+thetaAfterDecrease=[]; %Keep track of frames that are right after an avalanche
+thetaBeforeDecrease=[];
+for frame = 1:nFrames
+    thetaMin=min(thetas(frame,:));
+    thetaMax=max(thetas(frame,:));
+    thetaMean=mean(thetas(frame,:));
+
+    x(frame)=frame;
+    meanThetas(frame)=thetaMean;
+    ymin(frame)=abs(thetaMin-thetaMean);
+    ymax(frame)=abs(thetaMax-thetaMean);
+
+    if frame>1 && meanThetas(frame)<meanThetas(frame-1)
+        thetaAfterDecrease=[thetaAfterDecrease meanThetas(frame)];
+        thetaBeforeDecrease=[thetaBeforeDecrease meanThetas(frame-1)];
+    end
+end
+
+%plot avg angle for each frame
+figure(2);
+errorbar(x,meanThetas,ymin,ymax,"-s","MarkerSize",5,'Color','b','MarkerEdgeColor','b');
+xlabel('Frame')
+ylabel('Packing Angle')
+
+%this creates histograms of all packing angles, packing angles before an
+%avalanche, and packing angles after an avalanche
+figure(3);
+histogram(meanThetas);
+hold on;
+histogram(thetaBeforeDecrease,'FaceColor','g');
+hold on;
+histogram(thetaAfterDecrease,'FaceColor','r');
+legend('All Frames','Before Decrease','After Decrease')
+xlabel('Average Angle of Packing')
+ylabel('Number of Frames')
+
+    %}
+
+
