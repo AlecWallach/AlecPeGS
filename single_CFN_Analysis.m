@@ -5,6 +5,8 @@ nFrames = length(files);
 
 packingStruct=load(fullfile(directory,'packingStruct.mat')).packing;
 
+critical_angles=zeros(nFrames,1);
+coordination_number=zeros(nFrames,1);
 
 for frame = 1:nFrames
 
@@ -20,10 +22,16 @@ for frame = 1:nFrames
     FAM = postProcessingStruct.W;
     BAM = postProcessingStruct.B;
 
+    %Determine the critical angle of the packing by searching the
+    %packingStruct
+    
+
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Analyze distribution of forces in contact network
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    %{
     %We only care about one triangle of the matrix since its symmetrical
     lowerFAM = tril(FAM);
 
@@ -54,11 +62,12 @@ for frame = 1:nFrames
     text(0.3,120,forceStr,"FontSize",14);
     text(0.3,115,sdStr,"FontSize",14);
     text(0.3,110,kurtosisStr,"FontSize",14);
-
+    %}
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Plot mean coordination number as a function of critical angle
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 
 

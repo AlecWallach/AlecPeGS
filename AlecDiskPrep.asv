@@ -15,13 +15,13 @@ close all % Housekeeping
 %                           User defined values                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 verbose = true; %Generates lots of plots showing results
-saveResults = true;
+saveResults = false;
 
-directory = 'C:\Users\Squishfolk\Desktop\Alec\211MSDCF';
-preProDirectory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\PreProImages";
-maxFrames = 
-files = dir(fullfile(directory, 'DSC03323.JPG'));
-nFrames = length(files); %how many files are we processing ?
+directory = 'C:\Users\Squishfolk\Desktop\Alec\211MSDCF\';
+preProDirectory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\PreProImages\";
+maxFrames = load(fullfile(directory,'maxFrames.mat')); % load maxFrames array from findMaxFrames.m
+allFiles = dir(fullfile(directory, 'DSC*.JPG'));
+nFrames = length(maxFrames); %how many files are we processing ?
 
 % Hough Transform Values
 doParticleDetectionH = true; %Detect particles using Hough Transform?
@@ -40,6 +40,18 @@ contactG2Threshold = 0.1; %sum of g2 in a contact area larger than this determin
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                 User Input Not Required Below This Line                 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% use maxFrames to create a list of files to process
+% (we only want to process the maxima for now)
+files=[];
+for n=1:length(allFiles)
+    for i=1:length(maxFrames.maxFrames)
+        if allFiles(n).name == maxFrames.maxFrames(i)
+            filePath = dir(fullfile(directory,allFiles(n).name));
+            files=[files; filePath];
+        end
+    end
+end
 
 for frame = 1:nFrames %Loops for total number of images
 

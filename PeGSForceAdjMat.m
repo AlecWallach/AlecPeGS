@@ -12,8 +12,8 @@
 close all %Housekeeping
 clear all %Housekeeping
 
-directory = '/Volumes/SD/DCIM/211MSDCF/solved disks/';
-files = dir([directory, 'DSC*solved.mat']); 
+directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\Solved Networks\";
+files = dir(fullfile(directory, 'DSC*solved.mat')); 
 nFrames = length(files); %how many files are we processing ?
 
 %PARAMETERS NEEDED TO RUN THIS SCRIPT ARE SET HERE
@@ -42,8 +42,9 @@ for cycle = 1:nFrames %loop over these cycles
     clearvars contact;
     
     %input filnames
-    peOutfilename = [directory,files(cycle).name]; %input filename 
-    camImageFileName = [peOutfilename(1:25),peOutfilename(39:end-11),'.JPG'];  %adjusted force image filename 
+    peOutfilename = fullfile(directory,files(cycle).name); %input filename
+    peOutfilename = char(peOutfilename);
+    camImageFileName = fullfile(peOutfilename(1:32),peOutfilename(39:end-11),'.JPG');  %adjusted force image filename 
     %camImageFileName = ['frame1.jpg'];  %adjusted force image filename 
    
     %output filenames

@@ -14,14 +14,14 @@ close all % Housekeeping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                           User defined values                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-verbose = true; %Generates lots of plots showing results
+verbose = false; %Generates lots of plots showing results
 saveResults = true;
 
-directory = 'C:\Users\Squishfolk\Desktop\Alec\211MSDCF';
-preProDirectory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\PreProImages";
+directory = 'C:\Users\Squishfolk\Desktop\Alec\211MSDCF\';
+preProDirectory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\PreProImages\";
 maxFrames = load(fullfile(directory,'maxFrames.mat')); % load maxFrames array from findMaxFrames.m
-files = dir(fullfile(directory, 'DSC*.JPG'));
-%nFrames = length(files); %how many files are we processing ?
+allFiles = dir(fullfile(directory, 'DSC033*.JPG'));
+nFrames = length(maxFrames); %how many files are we processing ?
 
 % Hough Transform Values
 doParticleDetectionH = true; %Detect particles using Hough Transform?
@@ -42,12 +42,17 @@ contactG2Threshold = 0.1; %sum of g2 in a contact area larger than this determin
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % use maxFrames to create a list of files to process
-for n=1:length(files)
-    for i=1:length(maxFrames)
-        if files(n).name  
+% (we only want to process the maxima for now)
+files=[];
+for n=1:length(allFiles)
+    for i=1:length(maxFrames.maxFrames)
+        if allFiles(n).name == maxFrames.maxFrames(i)
+            filePath = dir(fullfile(directory,allFiles(n).name));
+            files=[files; filePath];
         end
     end
 end
+nFrames=length(files);
 
 for frame = 1:nFrames %Loops for total number of images
 
@@ -187,7 +192,7 @@ for frame = 1:nFrames %Loops for total number of images
         
     end
     
-    if findNeighbours
+    if findNeighbours && verbose
         figure(3);
         imshow(Gimg); 
         hold on
