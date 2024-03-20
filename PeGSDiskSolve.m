@@ -30,7 +30,7 @@ clear all %housekeeping
 
 %which files are we processing ?
 directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\preprocessing files";
-files = dir(fullfile(directory, 'DSC*_preprocessing.mat')); 
+files = dir(fullfile(directory, 'DSC03344_preprocessing.mat')); 
 
 %how much of the particle diameter is used to fit the synthetic image 
 %(1 = use everything). Change this parameter only if the fit doesn't work 

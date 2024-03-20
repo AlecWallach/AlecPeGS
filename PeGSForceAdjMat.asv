@@ -44,7 +44,7 @@ for cycle = 1:nFrames %loop over these cycles
     %input filnames
     peOutfilename = fullfile(directory,files(cycle).name); %input filename
     peOutfilename = char(peOutfilename);
-    camImageFileName = [peOutfilename(1:41),peOutfilename(end-19:end-11),'.JPG'];  %adjusted force image filename 
+    camImageFileName = [peOutfilename(1:end-11),,'.JPG'];  %adjusted force image filename 
     %camImageFileName = ['frame1.jpg'];  %adjusted force image filename 
    
     %output filenames

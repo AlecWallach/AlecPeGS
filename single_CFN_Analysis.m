@@ -1,6 +1,6 @@
 directory = 'D:\DCIM\211MSDCF\';
 solved_directory = 'D:\DCIM\211MSDCF\SolvedNetworks';
-files = dir(fullframe(solved_directory, 'DSC*postProcessingWorkspace.mat'));
+files = dir(fullfile(solved_directory, 'DSC*postProcessingWorkspace.mat'));
 nFrames = length(files);
 
 packingStruct=load(fullfile(directory,'packingStruct.mat')).packing;
@@ -24,7 +24,7 @@ for frame = 1:nFrames
 
     %Determine the critical angle of the packing by searching the
     %packingStruct
-    
+
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
