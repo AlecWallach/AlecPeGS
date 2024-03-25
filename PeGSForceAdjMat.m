@@ -13,7 +13,7 @@ close all %Housekeeping
 clear all %Housekeeping
 
 directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\Solved Networks\";
-files = dir(fullfile(directory, 'DSC*solved.mat')); 
+files = dir(fullfile(directory, 'DSC03393_solved.mat')); 
 nFrames = length(files); %how many files are we processing ?
 
 %PARAMETERS NEEDED TO RUN THIS SCRIPT ARE SET HERE

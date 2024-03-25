@@ -20,7 +20,7 @@ saveResults = true;
 directory = 'C:\Users\Squishfolk\Desktop\Alec\211MSDCF\';
 preProDirectory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\PreProImages\";
 maxFrames = load(fullfile(directory,'maxFrames.mat')); % load maxFrames array from findMaxFrames.m
-allFiles = dir(fullfile(directory, 'DSC033*.JPG'));
+allFiles = dir(fullfile(directory, 'DSC03393.JPG'));
 nFrames = length(maxFrames); %how many files are we processing ?
 
 % Hough Transform Values
@@ -169,7 +169,7 @@ for frame = 1:nFrames %Loops for total number of images
         particleImg = cimg.*mask1;
 
         %Try to make uncompressed particle black by thresholding
-        particleImg = particleImg - 0.5;
+        particleImg = particleImg - 0.7;
         particleImg = particleImg.*(particleImg>0);
         
         particle(n).forceImage=particleImg;
