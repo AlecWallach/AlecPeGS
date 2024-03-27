@@ -20,7 +20,7 @@ saveResults = true;
 directory = 'C:\Users\Squishfolk\Desktop\Alec\211MSDCF\';
 preProDirectory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\PreProImages\";
 maxFrames = load(fullfile(directory,'maxFrames.mat')); % load maxFrames array from findMaxFrames.m
-allFiles = dir(fullfile(directory, 'DSC03393.JPG'));
+allFiles = dir(fullfile(directory, 'DSC033*.JPG'));
 nFrames = length(maxFrames); %how many files are we processing ?
 
 % Hough Transform Values

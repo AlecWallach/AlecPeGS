@@ -13,7 +13,7 @@ close all %Housekeeping
 clear all %Housekeeping
 
 directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\Solved Networks\";
-files = dir(fullfile(directory, 'DSC03393_solved.mat')); 
+files = dir(fullfile(directory, 'DSC033*_solved.mat')); 
 nFrames = length(files); %how many files are we processing ?
 
 %PARAMETERS NEEDED TO RUN THIS SCRIPT ARE SET HERE
@@ -22,7 +22,7 @@ fmin = 0.005; %minimum force (in Newton) to consider a contact a valid contact
 fmax = 20; %maximum force (in Newton) to consider a contact a valid contact
 emax = 100000; %maximum fit error/residual to consider a contact a valid contact
 fs=16; %plot font size
-verbose = true; %make lots of plots as we go
+verbose = false; %make lots of plots as we go
 
 % jut in case your data coordinate system is offset from the image
 % coordinate system (i.e. you only processed a small part of a larger
@@ -214,11 +214,12 @@ for cycle = 1:nFrames %loop over these cycles
             imagesc(W); 
             colormap(jet);
     end
+
+    %save everything
+    save(workspacefilename);
  
 end
 
-%save everything
-save(workspacefilename);
 
 
 

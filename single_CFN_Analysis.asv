@@ -74,10 +74,7 @@ for frame = 1:nFrames
     % Record average coordination number of the packing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    total_contacts=sum(sum(BAM));
-    num_particles=length(postProcessingStruct.particle);
-    avg_coordination_number(frame)=total_contacts/num_particles;
+    coordination_number
+
 
 end
-
-scatter(critical_angles,avg_coordination_number);
