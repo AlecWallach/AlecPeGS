@@ -2,12 +2,15 @@ directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF";
 solved_directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\Solved Networks";
 ImageFiles= dir(fullfile(directory,"DSC*.JPG"));
 PostProcessingFiles = dir(fullfile(solved_directory, 'DSC*postProcessingWorkspace.mat'));
-nFrames = length(files);
+nFrames = length(PostProcessingFiles);
 
 packingStruct=load(fullfile(directory,'packingStruct.mat')).packing;
 
 critical_angles=zeros(nFrames,1);
 avg_coordination_number=zeros(nFrames,1);
+avg_beta=zeros(nFrames,1);
+avg_normal_force=zeros(nFrames,1);
+avg_tangential_force=zeros(nFrames,1);
 
 for frame = 1:nFrames
 
@@ -29,6 +32,7 @@ for frame = 1:nFrames
     for i=1:length(packingStruct)
         if packingStruct(i).fileName(end-11:end) == ImageFileName
             critical_angles(frame) = packingStruct(i).packingAngleDegrees;
+            break
         end
     end
 
@@ -74,7 +78,39 @@ for frame = 1:nFrames
     % Record average coordination number of the packing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    coordination_number
+    total_contacts=sum(sum(BAM));
+    num_particles=length(postProcessingStruct.particle);
+    avg_coordination_number(frame)=total_contacts/num_particles;
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Record average force orientation of the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    particle=postProcessingStruct.particle;
+    N=length(particle);
+    betas=[];
+    for n=1:N
+        betas=[betas, particle(n).betas];
+    end
+    avg_beta(frame)=mean(betas);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Record average normal and tangential force of the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    normal_forces=[];
+    tangential_forces=[]
+    for n=1:N
+        normal_forces=[normal_forces, particle(n).forces.*cos(particle(n).alphas)];
+        
+    end
+    avg_beta(frame)=mean(betas);
 
 end
+
+figure(1)
+scatter(critical_angles,avg_coordination_number);
+xlabel('Critical Angle')
+ylabel('Mean Coordination Number')
+figure(2)
+scatter(critical_angles,avg_beta);
