@@ -143,8 +143,6 @@ for frame = 1:nFrames %Loops for total number of images
         %drawnow;
     end
 
-    % Dim the background of particles in the green channel for proper force
-    % fitting
     Gimg = im2double(Gimg);
     Rimg = im2double(Rimg);
     Gimg = Gimg-0.7*Rimg;
@@ -169,7 +167,13 @@ for frame = 1:nFrames %Loops for total number of images
         cropYstart = round(particle(n).y-r);
         cropYstop = round(particle(n).y-r)+ size(mask1,2)-1;
         cimg = im2double(Gimg(cropYstart:cropYstop, cropXstart:cropXstop));
-        particleImg = cimg.*mask1;     
+        particleImg = cimg.*mask1;
+
+        %{
+        %Try to make uncompressed particle black by thresholding
+        particleImg = particleImg - 0.7;
+        particleImg = particleImg.*(particleImg>0);
+        %}        
 
         particle(n).forceImage=particleImg;
         
