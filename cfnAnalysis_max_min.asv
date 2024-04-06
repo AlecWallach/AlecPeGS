@@ -1,0 +1,454 @@
+directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF";
+solved_directory = "C:\Users\Squishfolk\Desktop\Alec\211MSDCF\Solved Networks";
+ImageFiles= dir(fullfile(directory,"DSC*.JPG"));
+PostProcessingFiles = dir(fullfile(solved_directory, 'DSC*postProcessingWorkspace.mat'));
+nFrames = length(PostProcessingFiles);
+
+% load lists that tell us what the max/min frames are (fix packingStruct
+% labeling to make this easier)
+minFrames = load(fullfile(directory,'minFrames.mat'));
+maxFrames = load(fullfile(directory,'maxFrames.mat'));
+
+minPostProcessingFiles = [];
+for n=1:length(PostProcessingFiles)
+    for i=1:length(minFrames(1).minFrames)
+        if [PostProcessingFiles(n).name(1:8),'.JPG'] == minFrames(1).minFrames(i)
+            filePath = dir(fullfile(solved_directory,PostProcessingFiles(n).name));
+            minPostProcessingFiles=[minPostProcessingFiles; filePath];
+        end
+    end
+end
+nMinFrames=length(minPostProcessingFiles);
+
+maxPostProcessingFiles = [];
+for n=1:length(PostProcessingFiles)
+    for i=1:length(maxFrames(1).maxFrames)
+        if [PostProcessingFiles(n).name(1:8),'.JPG'] == maxFrames(1).maxFrames(i)
+            filePath = dir(fullfile(solved_directory,PostProcessingFiles(n).name));
+            maxPostProcessingFiles=[maxPostProcessingFiles; filePath];
+        end
+    end
+end
+nMaxFrames=length(maxPostProcessingFiles);
+
+packingStruct=load(fullfile(directory,'packingStruct.mat')).packing;
+
+critical_angles=zeros(nMaxFrames,1);
+avg_coordination_number_max=zeros(nMaxFrames,1);
+avg_beta_max=zeros(nMaxFrames,1);
+avg_alpha_max=zeros(nMaxFrames,1);
+num_connected_components_max=zeros(nMaxFrames,1);
+longest_connected_component_max=zeros(nMaxFrames,1);
+avg_normal_force_max=zeros(nMaxFrames,1);
+avg_tangential_force_max=zeros(nMaxFrames,1);
+
+parfor frame = 1:nMaxFrames
+
+    % note the name of the file so we can search packingStruct for the
+    % packing angle
+    ImageFileName = [maxPostProcessingFiles(frame).name(1:8),'.JPG'];
+    
+    % load post processing struct
+    PostProcessingFileName=maxPostProcessingFiles(frame).name;
+    postProcessingFile = fullfile(solved_directory,PostProcessingFileName);
+    postProcessingStruct = load(postProcessingFile);
+
+    % load force adjacency matrix and binary adjacency matrix
+    FAM = postProcessingStruct.W;
+    BAM = postProcessingStruct.B;
+
+    %Determine the critical angle of the packing by searching the
+    %packingStruct
+    for i=1:length(packingStruct)
+        if packingStruct(i).fileName(end-11:end) == ImageFileName
+            critical_angles(frame) = packingStruct(i).packingAngle;
+            break
+        end
+    end
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Analyze distribution of forces in contact network
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %{
+    %We only care about one triangle of the matrix since its symmetrical
+    lowerFAM = tril(FAM);
+
+    %Make a vector containing all of the non-zero forces
+    forceVec=[];
+    for i=1:size(lowerFAM,1)
+        for j=1:size(lowerFAM,2)
+            if lowerFAM(i,j)>0
+                forceVec=[forceVec, lowerFAM(i,j)];
+            end
+        end
+    end
+
+
+    %Find the mean, standard deviation, kurtosis of force distribution
+    meanForce = mean(forceVec);
+    forceSD = std(forceVec);
+    forceKurtosis = kurtosis(forceVec);
+
+    %Make a histogram of forces and add info to the plot
+    figure(1)
+    histogram(forceVec,50)
+    xlabel("Force (N)","FontSize",14)
+    ylabel("Number of contacts","FontSize",14)
+    forceStr=sprintf("mean force = %0.3f N",meanForce);
+    sdStr=sprintf("standard deviation = %0.3f N",forceSD);
+    kurtosisStr=sprintf("kurtosis = %0.3f",forceKurtosis);
+    text(0.3,120,forceStr,"FontSize",14);
+    text(0.3,115,sdStr,"FontSize",14);
+    text(0.3,110,kurtosisStr,"FontSize",14);
+    %}
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Record average coordination number of the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    total_contacts=sum(sum(BAM));
+    num_particles=length(postProcessingStruct.particle);
+    avg_coordination_number_max(frame)=total_contacts/num_particles;
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Record average force orientation of the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    particle=postProcessingStruct.particle;
+    N=length(particle);
+    betas=[];
+    alphas=[];
+    for n=1:N
+        betas=[betas, particle(n).betas];
+        for i=1:length(particle(n).alphas) % for some reason some of the alphas are row vectors and some are column vectors
+            alphas=[alphas,particle(n).alphas(i)];
+        end
+    end
+    avg_beta_max(frame)=mean(betas);
+    avg_alpha_max(frame)=mean(alphas)
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Record average normal and tangential force of the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %{
+    normal_forces=[];
+    tangential_forces=[];
+    for n=1:N
+        normal_forces=[normal_forces, particle(n).forces.*cos(particle(n).alphas)];
+        tangential_forces=[tangential_forces, particle(n).forces.*cos(particle(n).alphas)];
+    end
+    avg_normal_force(frame)=mean(normal_forces);
+    avg_tangential_force(frame)=mean(tangential_forces);
+    %}
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Find number of connected components in the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    bins = conncomp(graph(BAM))
+    num_connected_components_max=[num_connected_components_max, length(bins)];
+    longest_connected_component_max=[longest_connected_component_max, max(bins)];
+
+end
+disp(1)
+
+
+repose_angles=zeros(nMinFrames,1);
+avg_coordination_number_min=zeros(nMaxFrames,1);
+avg_beta_min=zeros(nMinFrames,1);
+avg_alpha_min=zeros(nMinFrames);
+num_connected_components_min=zeros(nMinFrames,1);
+longest_connected_component_min=zeros(nMinFrames,1);
+avg_normal_force_min=zeros(nMinFrames,1);
+avg_tangential_force_min=zeros(nMinFrames,1);
+
+parfor frame = 1:nMinFrames
+
+    % note the name of the file so we can search packingStruct for the
+    % packing angle
+    ImageFileName = [minPostProcessingFiles(frame).name(1:8),'.JPG'];
+    
+    % load post processing struct
+    PostProcessingFileName=minPostProcessingFiles(frame).name;
+    postProcessingFile = fullfile(solved_directory,PostProcessingFileName);
+    postProcessingStruct = load(postProcessingFile);
+
+    % load force adjacency matrix and binary adjacency matrix
+    FAM = postProcessingStruct.W;
+    BAM = postProcessingStruct.B;
+
+    %Determine the critical angle of the packing by searching the
+    %packingStruct
+    for i=1:length(packingStruct)
+        if packingStruct(i).fileName(end-11:end) == ImageFileName
+            repose_angles(frame) = packingStruct(i).packingAngle;
+            break
+        end
+    end
+
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Analyze distribution of forces in contact network
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %{
+    %We only care about one triangle of the matrix since its symmetrical
+    lowerFAM = tril(FAM);
+
+    %Make a vector containing all of the non-zero forces
+    forceVec=[];
+    for i=1:size(lowerFAM,1)
+        for j=1:size(lowerFAM,2)
+            if lowerFAM(i,j)>0
+                forceVec=[forceVec, lowerFAM(i,j)];
+            end
+        end
+    end
+
+
+    %Find the mean, standard deviation, kurtosis of force distribution
+    meanForce = mean(forceVec);
+    forceSD = std(forceVec);
+    forceKurtosis = kurtosis(forceVec);
+
+    %Make a histogram of forces and add info to the plot
+    figure(1)
+    histogram(forceVec,50)
+    xlabel("Force (N)","FontSize",14)
+    ylabel("Number of contacts","FontSize",14)
+    forceStr=sprintf("mean force = %0.3f N",meanForce);
+    sdStr=sprintf("standard deviation = %0.3f N",forceSD);
+    kurtosisStr=sprintf("kurtosis = %0.3f",forceKurtosis);
+    text(0.3,120,forceStr,"FontSize",14);
+    text(0.3,115,sdStr,"FontSize",14);
+    text(0.3,110,kurtosisStr,"FontSize",14);
+    %}
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Record average coordination number of the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    total_contacts=sum(sum(BAM));
+    num_particles=length(postProcessingStruct.particle);
+    avg_coordination_number_min(frame)=total_contacts/num_particles;
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Record average force orientation of the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    particle=postProcessingStruct.particle;
+    N=length(particle);
+    betas=[];
+    alphas=[];
+    for n=1:N
+        betas=[betas, particle(n).betas];
+        for i=1:length(particle(n).alphas) % for some reason some of the alphas are row vectors and some are column vectors
+            alphas=[alphas,particle(n).alphas(i)];
+        end
+    end
+    avg_beta_min(frame)=mean(betas);
+    avg_alpha_min(frame)=mean(alphas)
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Record average normal and tangential force of the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    %{
+    normal_forces=[];
+    tangential_forces=[];
+    for n=1:N
+        normal_forces=[normal_forces, particle(n).forces.*cos(particle(n).alphas)];
+        tangential_forces=[tangential_forces, particle(n).forces.*cos(particle(n).alphas)];
+    end
+    avg_normal_force(frame)=mean(normal_forces);
+    avg_tangential_force(frame)=mean(tangential_forces);
+    %}
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Find number of connected components in the packing
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    bins = conncomp(graph(BAM))
+    num_connected_components_min=[num_connected_components_min, length(bins)];
+    longest_connected_component_min=[longest_connected_component_min, max(bins)];
+
+end
+
+
+% Plot mean coordination number vs. critical angle
+figure(1)
+scatter(critical_angles,avg_coordination_number_max);
+xticks([pi/6 pi/5 pi/4 pi/3]);
+xticklabels({'\pi/6', '\pi/5', '\pi/4', '\pi/3'});
+xlabel('Critical Angle')
+ylabel('Mean Coordination Number')
+title('Mean Coordination Number vs. Critical Angle')
+
+% Plot mean beta angle vs.critical angle
+figure(2)
+scatter(critical_angles,avg_beta_max);
+xlabel('Critical Angle')
+ylabel('Mean Beta Angle')
+title('Mean Beta Angle vs. Critical Angle')
+
+% Plot mean alpha angle vs.critical angle
+figure(3)
+scatter(critical_angles,avg_alpha_max);
+xlabel('Critical Angle')
+ylabel('Mean Alpha Angle')
+title('Mean Alpha Angle vs. Critical Angle')
+
+% Plot number of connected components vs.critical angle
+figure(4)
+scatter(critical_angles,num_connected_components_max);
+xlabel('Critical Angle')
+ylabel('Number of Connected Components')
+title('Number of Connected Components vs. Critical Angle')
+
+% Plot longest connected components vs.critical angle
+figure(5)
+scatter(critical_angles,longest_connected_component_max);
+xlabel('Critical Angle')
+ylabel('Longest Connected Components')
+title('NLongest Connected Component vs. Critical Angle')
+
+% Plot mean coordination number vs. angle with maxs and mins in different
+% colors
+figure(6)
+scatter(critical_angles,avg_coordination_number_max);
+hold on
+scatter(repose_angles,avg_coordination_number_min,c='red');
+xlabel('Critical Angle')
+ylabel('Mean Coordination Number')
+title('Mean Coordination Number vs. Critical Angle')
+hold off
+
+% Plot mean beta vs. angle with maxs and mins in different
+% colors
+figure(7)
+scatter(critical_angles,avg_beta_max);
+hold on
+scatter(repose_angles,avg_beta_min,c='red');
+xlabel('Critical Angle')
+ylabel('Mean Beta Angle')
+title('Mean Beta Angle vs. Critical Angle')
+hold off
+
+% Plot mean alpha angle vs. angle with maxs and mins in different
+% colors
+figure(8)
+scatter(critical_angles,avg_alpha_max);
+hold on
+scatter(repose_angles,avg_alpha_min,c='red');
+xlabel('Critical Angle')
+ylabel('Mean Alpha Angle')
+title('Mean Alpha Angle vs. Critical Angle')
+hold off
+
+% Plot number of connected components vs. angle with maxs and mins in different
+% colors
+figure(9)
+scatter(critical_angles,num_connected_components_max);
+hold on
+scatter(repose_angles,num_connected_components_min,c='red');
+xlabel('Critical Angle')
+ylabel('Number of Connected Components')
+title('Number of Connected Components vs. Critical Angle')
+hold off
+
+% Plot longest connected components vs. angle with maxs and mins in different
+% colors
+figure(10)
+scatter(critical_angles,longest_connected_component_max);
+hold on
+scatter(repose_angles,longest_connected_component_min,c='red');
+xlabel('Critical Angle')
+ylabel('Longest Connected Component')
+title('Longest Connected Component vs. Critical Angle')
+hold off
+
+% Plot mean alpha angle vs. angle with maxs and mins in different
+% colors
+figure(11)
+scatter(critical_angles,avg_alpha_max);
+hold on
+scatter(repose_angles,avg_alpha_min,c='red');
+xlabel('Critical Angle')
+ylabel('Mean Alpha Angle')
+title('Mean Alpha Angle vs. Critical Angle')
+hold off
+
+
+% Plot difference between coordination number for frame before avalanche n
+% and coordination number for frame after avalanche n-1 vs. critical angle
+coordination_number_difference=[];
+for i=2:length(avg_coordination_number_max)
+    max_coordination_number=avg_coordination_number_max(i);
+    min_coordination_number=avg_coordination_number_min(i-1);
+    coordination_number_difference=[coordination_number_difference, max_coordination_number-min_coordination_number];
+end
+figure(12)
+scatter(critical_angles(2:end),coordination_number_difference)
+xlabel('Critical Angle of Avalanche n')
+ylabel('Difference in Mean Coordination Number')
+title('Coordination Number Difference vs. Critical Angle')
+
+% Plot difference between beta angle for frame before avalanche n
+% and beta angle for frame after avalanche n-1 vs. critical angle
+beta_angle_difference=[];
+for i=2:length(avg_beta_max)
+    max_beta_angle=avg_beta_max(i);
+    min_beta_angle=avg_beta_min(i-1);
+    beta_angle_difference=[beta_angle_difference, max_beta_angle-min_beta_angle];
+end
+figure(13)
+scatter(critical_angles(2:end),beta_angle_difference)
+xlabel('Critical Angle of Avalanche n')
+ylabel('Difference in Mean Beta Angle')
+title('Mean Beta Angle Difference vs. Critical Angle')
+
+% Plot difference between alpha angle for frame before avalanche n
+% and alpha for frame after avalanche n-1 vs. critical angle
+alpha_angle_difference=[];
+for i=2:length(avg_alpha_max)
+    max_alpha_angle=avg_alpha_max(i);
+    min_alpha_angle=avg_alpha_min(i-1);
+    alpha_angle_difference=[alpha_angle_difference, max_alpha_angle-min_alpha_angle];
+end
+figure(14)
+scatter(critical_angles(2:end),alpha_angle_difference)
+xlabel('Critical Angle of Avalanche n')
+ylabel('Difference in Mean alpha Angle')
+title('Mean alpha Angle Difference vs. Critical Angle')
+
+% Plot difference between number of connected components for frame before avalanche n
+% and number of connected components for frame after avalanche n-1 vs. critical angle
+num_connected_components_difference=[];
+for i=2:length(num_connected_components_max)
+    max_num_connected_components=num_connected_components_max(i);
+    min_num_connected_components=num_connected_components_min(i-1);
+    num_connected_components_difference=[num_connected_components_difference, max_num_connected_components-min_num_connected_components];
+end
+figure(15)
+scatter(critical_angles(2:end),alpha_angle_difference)
+xlabel('Critical Angle of Avalanche n')
+ylabel('Difference in Number of Connected Components')
+title('Number of Connected Components Difference vs. Critical Angle')
+
+% Plot difference between length of longest connected component for frame before avalanche n
+% and longest connected component for frame after avalanche n-1 vs. critical angle
+longest_connected_component_difference=[];
+for i=2:length(longest_connected_component_max)
+    max_longest_connected_component=longest_connected_component_max(i);
+    min_longest_connected_component=longest_connected_component_min(i-1);
+    longest_connected_component_difference=[longest_connected_component_difference, max_longest_connected_component-min_longest_connected_component];
+end
+figure(16)
+scatter(critical_angles(2:end),alpha_angle_difference)
+xlabel('Critical Angle of Avalanche n')
+ylabel('Difference in Length of Longest Connected Component')
+title('Length of Longest Connected Component Difference vs. Critical Angle')
