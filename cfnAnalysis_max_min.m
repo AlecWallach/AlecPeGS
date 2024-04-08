@@ -148,11 +148,13 @@ parfor frame = 1:nMaxFrames
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Find number of connected components in the packing
+    % Find number of connected components in the packing & longest
+    % connected component
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     bins = conncomp(graph(BAM))
-    num_connected_components_max(frame)=length(bins);
-    longest_connected_component_max(frame)=max(bins);
+    num_connected_components_max(frame)=max(bins);
+    component_sizes=accumarray(bins',1)
+    longest_connected_component_max(frame)=max(component_sizes);
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -303,12 +305,13 @@ parfor frame = 1:nMinFrames
     %}
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Find number of connected components in the packing
+    % Find number of connected components in the packing & longest
+    % connected component
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
     bins = conncomp(graph(BAM))
-    num_connected_components_min(frame)=length(bins);
-    longest_connected_component_min(frame)=max(bins);
+    num_connected_components_min(frame)=max(bins);
+    component_sizes=accumarray(bins',1)
+    longest_connected_component_min(frame)=max(component_sizes);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Find 3-cycle density and mean stability
@@ -401,7 +404,7 @@ title('mean 3-cycle stability vs. Critical Angle')
 figure(8)
 scatter(critical_angles,avg_coordination_number_max);
 hold on
-scatter(repose_angles,avg_coordination_number_min,c='red');
+scatter(repose_angles,avg_coordination_number_min);
 xlabel('Critical Angle')
 ylabel('Mean Coordination Number')
 title('Mean Coordination Number vs. Critical Angle')
@@ -412,7 +415,7 @@ hold off
 figure(9)
 scatter(critical_angles,avg_beta_max);
 hold on
-scatter(repose_angles,avg_beta_min,c='red');
+scatter(repose_angles,avg_beta_min);
 xlabel('Critical Angle')
 ylabel('Mean Beta Angle')
 title('Mean Beta Angle vs. Critical Angle')
@@ -423,7 +426,7 @@ hold off
 figure(10)
 scatter(critical_angles,avg_alpha_max);
 hold on
-scatter(repose_angles,avg_alpha_min,c='red');
+scatter(repose_angles,avg_alpha_min);
 xlabel('Critical Angle')
 ylabel('Mean Alpha Angle')
 title('Mean Alpha Angle vs. Critical Angle')
@@ -434,7 +437,7 @@ hold off
 figure(11)
 scatter(critical_angles,num_connected_components_max);
 hold on
-scatter(repose_angles,num_connected_components_min,c='red');
+scatter(repose_angles,num_connected_components_min);
 xlabel('Critical Angle')
 ylabel('Number of Connected Components')
 title('Number of Connected Components vs. Critical Angle')
@@ -445,7 +448,7 @@ hold off
 figure(12)
 scatter(critical_angles,longest_connected_component_max);
 hold on
-scatter(repose_angles,longest_connected_component_min,c=);
+scatter(repose_angles,longest_connected_component_min);
 xlabel('Critical Angle')
 ylabel('Longest Connected Component')
 title('Longest Connected Component vs. Critical Angle')
