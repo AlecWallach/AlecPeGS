@@ -60,28 +60,28 @@ for l = 1:length(f1)
     contactIp2 = sum(sum(contactImg));
     
     %if we declare our contact valid
-    if(contactG2p1 > contactG2Threshold && contactG2p2 > contactG2Threshold)
-        %cI = sum(sum(contactImg)); %Use integrated intensity instead of g2
-        %if(cI > contactIThreshold) %Use integrated intensity instead of g2
-        %Plot contact area
-        if (verbose)
-            display(['contact found between particles ',num2str(f1(l)),' and ',num2str(f2(l))]);
-            %viscircles([contactXp2; contactYp2]', CR,'EdgeColor','w');
-            %text(contactXp1, contactYp1,num2str(contactG2p1),'Color','w');
-            %drawnow;
-        end
-        %this is a valid contact, remember it
-        particle(f1(l)).z= particle(f1(l)).z +1; %increase coordination number
-        particle(f1(l)).contactG2s(particle(f1(l)).z)=contactG2p1; %remember the g2 value of the current contact area
-        particle(f1(l)).contactIs(particle(f1(l)).z)=contactIp1;
-        particle(f1(l)).neighbours(particle(f1(l)).z) = f2(l); %particle m is now noted as a neigbour in the particle l datastructure
-        particle(f1(l)).betas(particle(f1(l)).z) = atan2(y2-y1,x2-x1); %the contact angle to particle m is now noted in the particle l datastructure
-        particle(f2(l)).z= particle(f2(l)).z +1; %increase coordination number
-        particle(f2(l)).contactG2s(particle(f2(l)).z)=contactG2p2; %remember the g2 value of the current contact area
-        particle(f2(l)).contactIs(particle(f2(l)).z)=contactIp2;
-        particle(f2(l)).neighbours(particle(f2(l)).z) = f1(l); %particle m is now noted as a neigbour in the particle l datastructure
-        particle(f2(l)).betas(particle(f2(l)).z) = atan2(y1-y2,x1-x2);
+    %if(contactG2p1 > contactG2Threshold && contactG2p2 > contactG2Threshold)
+    %cI = sum(sum(contactImg)); %Use integrated intensity instead of g2
+    %if(cI > contactIThreshold) %Use integrated intensity instead of g2
+    %Plot contact area
+    if (verbose)
+        display(['contact found between particles ',num2str(f1(l)),' and ',num2str(f2(l))]);
+        %viscircles([contactXp2; contactYp2]', CR,'EdgeColor','w');
+        %text(contactXp1, contactYp1,num2str(contactG2p1),'Color','w');
+        %drawnow;
     end
+    %this is a valid contact, remember it
+    particle(f1(l)).z= particle(f1(l)).z +1; %increase coordination number
+    particle(f1(l)).contactG2s(particle(f1(l)).z)=contactG2p1; %remember the g2 value of the current contact area
+    particle(f1(l)).contactIs(particle(f1(l)).z)=contactIp1;
+    particle(f1(l)).neighbours(particle(f1(l)).z) = f2(l); %particle m is now noted as a neigbour in the particle l datastructure
+    particle(f1(l)).betas(particle(f1(l)).z) = atan2(y2-y1,x2-x1); %the contact angle to particle m is now noted in the particle l datastructure
+    particle(f2(l)).z= particle(f2(l)).z +1; %increase coordination number
+    particle(f2(l)).contactG2s(particle(f2(l)).z)=contactG2p2; %remember the g2 value of the current contact area
+    particle(f2(l)).contactIs(particle(f2(l)).z)=contactIp2;
+    particle(f2(l)).neighbours(particle(f2(l)).z) = f1(l); %particle m is now noted as a neigbour in the particle l datastructure
+    particle(f2(l)).betas(particle(f2(l)).z) = atan2(y1-y2,x1-x2);
+    %end
 end
 
 
