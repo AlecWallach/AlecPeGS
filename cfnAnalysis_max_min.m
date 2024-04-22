@@ -110,9 +110,21 @@ parfor frame = 1:nMaxFrames
     % Record average coordination number of the packing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    
     total_contacts=sum(sum(BAM));
     num_particles=length(postProcessingStruct.particle);
     avg_coordination_number_max(frame)=total_contacts/num_particles;
+    
+%{
+    %Do this with G2 rather than forces
+    total_contacts=0;
+    particle=postProcessingStruct.particle;
+    for i=1:length(particle)
+        total_contacts = total_contacts + length(particle(i).neighbours)
+    end
+    num_particles=length(postProcessingStruct.particle);
+    avg_coordination_number_max(frame)=total_contacts/num_particles;
+%}
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Record average force orientation of the packing
@@ -129,7 +141,7 @@ parfor frame = 1:nMaxFrames
         end
     end
     avg_beta_max(frame)=mean(betas);
-    avg_alpha_max(frame)=mean(alphas)
+    avg_alpha_max(frame)=mean(alphas);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Record average normal and tangential force of the packing
@@ -151,9 +163,9 @@ parfor frame = 1:nMaxFrames
     % Find number of connected components in the packing & longest
     % connected component
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    bins = conncomp(graph(BAM))
+    bins = conncomp(graph(BAM));
     num_connected_components_max(frame)=max(bins);
-    component_sizes=accumarray(bins',1)
+    component_sizes=accumarray(bins',1);
     longest_connected_component_max(frame)=max(component_sizes);
 
 
@@ -178,14 +190,15 @@ parfor frame = 1:nMaxFrames
         if force1~=0 && force2~=0 && force3~=0 
             % Found a 3-cycle
             numThreeCycles = numThreeCycles + 1;
-            avg_force=(force1+force2+force3)/3
-            cycle_stability= (force1*force2*force3)/avg_force
-            cycle_stabilities=[cycle_stabilities,cycle_stability]
+            avg_force=(force1+force2+force3)/3;
+            cycle_stability= (force1*force2*force3)/avg_force;
+            cycle_stabilities=[cycle_stabilities,cycle_stability];
         end
     end
 
     three_cycle_density_max(frame)=numThreeCycles/N;
     mean_three_cycle_stability_max(frame)=mean(cycle_stabilities);
+
 
 end
 
@@ -268,9 +281,21 @@ parfor frame = 1:nMinFrames
     % Record average coordination number of the packing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    
     total_contacts=sum(sum(BAM));
     num_particles=length(postProcessingStruct.particle);
     avg_coordination_number_min(frame)=total_contacts/num_particles;
+    
+%{
+    %Do this with G2 rather than forces
+    total_contacts=0;
+    particle=postProcessingStruct.particle;
+    for i=1:length(particle)
+        total_contacts = total_contacts + length(particle(i).neighbours)
+    end
+    num_particles=length(postProcessingStruct.particle);
+    avg_coordination_number_min(frame)=total_contacts/num_particles;
+%}
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Record average force orientation of the packing
@@ -287,7 +312,7 @@ parfor frame = 1:nMinFrames
         end
     end
     avg_beta_min(frame)=mean(betas);
-    avg_alpha_min(frame)=mean(alphas)
+    avg_alpha_min(frame)=mean(alphas);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Record average normal and tangential force of the packing
@@ -308,9 +333,9 @@ parfor frame = 1:nMinFrames
     % Find number of connected components in the packing & longest
     % connected component
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    bins = conncomp(graph(BAM))
+    bins = conncomp(graph(BAM));
     num_connected_components_min(frame)=max(bins);
-    component_sizes=accumarray(bins',1)
+    component_sizes=accumarray(bins',1);
     longest_connected_component_min(frame)=max(component_sizes);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -334,9 +359,9 @@ parfor frame = 1:nMinFrames
         if force1~=0 && force2~=0 && force3~=0 
             % Found a 3-cycle
             numThreeCycles = numThreeCycles + 1;
-            avg_force=(force1+force2+force3)/3
-            cycle_stability= (force1*force2*force3)/avg_force
-            cycle_stabilities=[cycle_stabilities,cycle_stability]
+            avg_force=(force1+force2+force3)/3;
+            cycle_stability= (force1*force2*force3)/avg_force;
+            cycle_stabilities=[cycle_stabilities,cycle_stability];
         end
     end
 
@@ -347,15 +372,157 @@ parfor frame = 1:nMinFrames
 end
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Coordination number plots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Plot mean coordination number vs. critical angle
 figure(1)
+subplot(1,2,1);
 scatter(critical_angles,avg_coordination_number_max);
-xticks([pi/6 pi/5 pi/4 pi/3]);
-xticklabels({'\pi/6', '\pi/5', '\pi/4', '\pi/3'});
-xlabel('Critical Angle')
-ylabel('Mean Coordination Number')
-title('Mean Coordination Number vs. Critical Angle')
+hold on
+scatter(repose_angles,avg_coordination_number_min);
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 14)
+xline(mean(repose_angles),'--','\color{red}AR', 'FontSize', 14)
+xlabel('$\theta$','Interpreter','latex', 'FontSize', 14)
+ylabel('Mean Coordination Number', 'FontSize', 14)
+hold off
 
+subplot(1,2,2)
+coordination_number_difference=[];
+for i=2:length(avg_coordination_number_max)
+    max_coordination_number=avg_coordination_number_max(i);
+    min_coordination_number=avg_coordination_number_min(i-1);
+    coordination_number_difference=[coordination_number_difference, max_coordination_number-min_coordination_number];
+end
+scatter(critical_angles(2:end),coordination_number_difference)
+xlabel('MSA', 'FontSize', 14)
+ylabel('Change in Mean Coordination Number', 'FontSize', 14)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 14)
+
+% Plot the centroid of the difference plot
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles(2:end)) / sqrt(length(critical_angles(2:end)));
+SEM_y = std(coordination_number_difference) / sqrt(length(coordination_number_difference));
+hold on
+scatter(mean(critical_angles(2:end)),mean(coordination_number_difference),'filled', 'black', 'SizeData', 50)
+% Add error bars to the centroid
+errorbar(mean(critical_angles(2:end)), mean(coordination_number_difference), ...
+    SEM_x, SEM_y, SEM_x, SEM_y, 'k', 'LineStyle', 'none', 'LineWidth', 2);
+hold off
+
+sgtitle('Coordination Number')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Beta angle plots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plot mean beta angle vs. critical angle
+figure(2)
+subplot(1,2,1);
+scatter(critical_angles,avg_beta_max);
+hold on
+scatter(repose_angles,avg_beta_min);
+xlabel('$\theta$','Interpreter','latex', 'FontSize', 14)
+ylabel('Mean Beta Angle', 'FontSize', 14)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 14)
+xline(mean(repose_angles),'--','\color{red}AR', 'FontSize', 14)
+hold off
+
+
+% Plot difference between coordination number for frame before avalanche n
+% and coordination number for frame after avalanche n-1 vs. critical angle
+subplot(1,2,2)
+beta_angle_difference=[];
+for i=2:length(avg_beta_max)
+    max_beta_angle=avg_beta_max(i);
+    min_beta_angle=avg_beta_min(i-1);
+    beta_angle_difference=[beta_angle_difference, max_beta_angle-min_beta_angle];
+end
+scatter(critical_angles(2:end),beta_angle_difference)
+xlabel('MSA', 'FontSize', 14)
+ylabel('Change in Mean Beta Angle', 'FontSize', 14)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 14)
+
+% Plot the centroid of the difference plot
+hold on
+scatter(mean(critical_angles(2:end)),mean(beta_angle_difference),'filled', 'black', 'SizeData', 50)
+hold off
+
+sgtitle('Beta Angle Number')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Connected Components plots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plot number of connected components vs. critical angle
+figure(3)
+subplot(2,2,1);
+scatter(critical_angles,num_connected_components_max);
+hold on
+scatter(repose_angles,num_connected_components_min);
+xlabel('$\theta$','Interpreter','latex', 'FontSize', 14)
+ylabel('Number of Connected Components', 'FontSize', 14)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 14)
+xline(mean(repose_angles),'--','\color{red}AR', 'FontSize', 14)
+hold off
+
+% Plot longest connected component vs. critical angle
+subplot(2,2,3);
+scatter(critical_angles,longest_connected_component_max);
+hold on
+scatter(repose_angles,longest_connected_component_min);
+xlabel('$\theta$','Interpreter','latex', 'FontSize', 14)
+ylabel('Length of Longest Connected Component', 'FontSize', 14)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 14)
+xline(mean(repose_angles),'--','\color{red}AR', 'FontSize', 14)
+hold off
+
+
+% Plot difference between coordination number for frame before avalanche n
+% and coordination number for frame after avalanche n-1 vs. critical angle
+subplot(2,2,2)
+num_connected_components_difference=[];
+for i=2:length(num_connected_components_max)
+    max_num_connected_components=num_connected_components_max(i);
+    min_num_connected_components=num_connected_components_min(i-1);
+    num_connected_components_difference=[num_connected_components_difference, max_num_connected_components-min_num_connected_components];
+end
+scatter(critical_angles(2:end),num_connected_components_difference)
+xlabel('MSA', 'FontSize', 14)
+ylabel('Change in Number of Connected Components', 'FontSize', 14)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 14)
+
+% Plot the centroid of the difference plot
+hold on
+scatter(mean(critical_angles(2:end)),mean(num_connected_components_difference),'filled', 'black', 'SizeData', 50)
+hold off
+
+% Plot difference between coordination number for frame before avalanche n
+% and coordination number for frame after avalanche n-1 vs. critical angle
+subplot(2,2,4)
+longest_connected_component_difference=[];
+for i=2:length(longest_connected_component_max)
+    max_longest_connected_component=longest_connected_component_max(i);
+    min_longest_connected_component=longest_connected_component_min(i-1);
+    longest_connected_component_difference=[longest_connected_component_difference, max_longest_connected_component-min_longest_connected_component];
+end
+scatter(critical_angles(2:end),longest_connected_component_difference)
+xlabel('MSA', 'FontSize', 14)
+ylabel('Change in Length of Longest Connected Component', 'FontSize', 14)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 14)
+
+% Plot the centroid of the difference plot
+hold on
+scatter(mean(critical_angles(2:end)),mean(longest_connected_component_difference),'filled', 'black')
+hold off
+
+
+sgtitle('Connected Components')
+
+
+
+%{
 % Plot mean beta angle vs.critical angle
 figure(2)
 scatter(critical_angles,avg_beta_max);
@@ -471,7 +638,7 @@ hold off
 figure(14)
 scatter(critical_angles,three_cycle_density_max);
 hold on
-scatter(critical_angles,three_cycle_density_min);
+scatter(repose_angles,three_cycle_density_min);
 xlabel('Critical Angle')
 ylabel('3-cycle density')
 title('3-cycle density vs. Critical Angle')
@@ -482,7 +649,7 @@ hold off
 figure(15)
 scatter(critical_angles,mean_three_cycle_stability_max);
 hold on
-scatter(critical_angles,mean_three_cycle_stability_min);
+scatter(repose_angles,mean_three_cycle_stability_min);
 xlabel('Critical Angle')
 ylabel('mean 3-cycle stability')
 title('mean 3-cycle stability vs. Critical Angle')
@@ -560,7 +727,7 @@ ylabel('Difference in Length of Longest Connected Component')
 title('Length of Longest Connected Component Difference vs. Critical Angle')
 
 % Plot difference between 3-cycle density for frame before avalanche n
-% and alpha for frame after avalanche n-1 vs. critical angle
+% and for frame after avalanche n-1 vs. critical angle
 three_cycle_density_difference=[];
 for i=2:length(three_cycle_density_max)
     max_three_cycle_density=three_cycle_density_max(i);
@@ -573,16 +740,17 @@ xlabel('Critical Angle of Avalanche n')
 ylabel('Difference in 3-cycle density')
 title('3-cycle density Difference vs. Critical Angle')
 
-% Plot difference between 3-cycle density for frame before avalanche n
-% and alpha for frame after avalanche n-1 vs. critical angle
+% Plot difference between 3-cycle stability for frame before avalanche n
+% and for frame after avalanche n-1 vs. critical angle
 three_cycle_stability_difference=[];
 for i=2:length(mean_three_cycle_stability_max)
     max_three_cycle_stability=mean_three_cycle_stability_max(i);
     min_three_cycle_stability=mean_three_cycle_stability_min(i-1);
     three_cycle_stability_difference=[three_cycle_stability_difference, max_three_cycle_stability-min_three_cycle_stability];
 end
-figure(14)
+figure(22)
 scatter(critical_angles(2:end),three_cycle_stability_difference)
 xlabel('Critical Angle of Avalanche n')
 ylabel('Difference in mean 3-cycle stability')
 title('Mean 3-cycle stability Difference vs. Critical Angle')
+%}
