@@ -110,9 +110,21 @@ parfor frame = 1:nMaxFrames
     % Record average coordination number of the packing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    
     total_contacts=sum(sum(BAM));
     num_particles=length(postProcessingStruct.particle);
     avg_coordination_number_max(frame)=total_contacts/num_particles;
+    
+%{
+    %Do this with G2 rather than forces
+    total_contacts=0;
+    particle=postProcessingStruct.particle;
+    for i=1:length(particle)
+        total_contacts = total_contacts + length(particle(i).neighbours)
+    end
+    num_particles=length(postProcessingStruct.particle);
+    avg_coordination_number_max(frame)=total_contacts/num_particles;
+%}
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Record average force orientation of the packing
@@ -129,7 +141,7 @@ parfor frame = 1:nMaxFrames
         end
     end
     avg_beta_max(frame)=mean(betas);
-    avg_alpha_max(frame)=mean(alphas)
+    avg_alpha_max(frame)=mean(alphas);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Record average normal and tangential force of the packing
@@ -148,11 +160,13 @@ parfor frame = 1:nMaxFrames
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Find number of connected components in the packing
+    % Find number of connected components in the packing & longest
+    % connected component
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    bins = conncomp(graph(BAM))
-    num_connected_components_max(frame)=length(bins);
-    longest_connected_component_max(frame)=max(bins);
+    bins = conncomp(graph(BAM));
+    num_connected_components_max(frame)=max(bins);
+    component_sizes=accumarray(bins',1);
+    longest_connected_component_max(frame)=max(component_sizes);
 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,14 +190,15 @@ parfor frame = 1:nMaxFrames
         if force1~=0 && force2~=0 && force3~=0 
             % Found a 3-cycle
             numThreeCycles = numThreeCycles + 1;
-            avg_force=(force1+force2+force3)/3
-            cycle_stability= (force1*force2*force3)/avg_force
-            cycle_stabilities=[cycle_stabilities,cycle_stability]
+            avg_force=(force1+force2+force3)/3;
+            cycle_stability= (force1*force2*force3)/avg_force;
+            cycle_stabilities=[cycle_stabilities,cycle_stability];
         end
     end
 
     three_cycle_density_max(frame)=numThreeCycles/N;
     mean_three_cycle_stability_max(frame)=mean(cycle_stabilities);
+
 
 end
 
@@ -266,9 +281,21 @@ parfor frame = 1:nMinFrames
     % Record average coordination number of the packing
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    
     total_contacts=sum(sum(BAM));
     num_particles=length(postProcessingStruct.particle);
     avg_coordination_number_min(frame)=total_contacts/num_particles;
+    
+%{
+    %Do this with G2 rather than forces
+    total_contacts=0;
+    particle=postProcessingStruct.particle;
+    for i=1:length(particle)
+        total_contacts = total_contacts + length(particle(i).neighbours)
+    end
+    num_particles=length(postProcessingStruct.particle);
+    avg_coordination_number_min(frame)=total_contacts/num_particles;
+%}
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Record average force orientation of the packing
@@ -285,7 +312,7 @@ parfor frame = 1:nMinFrames
         end
     end
     avg_beta_min(frame)=mean(betas);
-    avg_alpha_min(frame)=mean(alphas)
+    avg_alpha_min(frame)=mean(alphas);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Record average normal and tangential force of the packing
@@ -303,12 +330,13 @@ parfor frame = 1:nMinFrames
     %}
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Find number of connected components in the packing
+    % Find number of connected components in the packing & longest
+    % connected component
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    bins = conncomp(graph(BAM))
-    num_connected_components_min(frame)=length(bins);
-    longest_connected_component_min(frame)=max(bins);
+    bins = conncomp(graph(BAM));
+    num_connected_components_min(frame)=max(bins);
+    component_sizes=accumarray(bins',1);
+    longest_connected_component_min(frame)=max(component_sizes);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Find 3-cycle density and mean stability
@@ -331,9 +359,9 @@ parfor frame = 1:nMinFrames
         if force1~=0 && force2~=0 && force3~=0 
             % Found a 3-cycle
             numThreeCycles = numThreeCycles + 1;
-            avg_force=(force1+force2+force3)/3
-            cycle_stability= (force1*force2*force3)/avg_force
-            cycle_stabilities=[cycle_stabilities,cycle_stability]
+            avg_force=(force1+force2+force3)/3;
+            cycle_stability= (force1*force2*force3)/avg_force;
+            cycle_stabilities=[cycle_stabilities,cycle_stability];
         end
     end
 
@@ -344,15 +372,478 @@ parfor frame = 1:nMinFrames
 end
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Coordination number plots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Plot mean coordination number vs. critical angle
 figure(1)
+subplot(1,2,1);
 scatter(critical_angles,avg_coordination_number_max);
-xticks([pi/6 pi/5 pi/4 pi/3]);
-xticklabels({'\pi/6', '\pi/5', '\pi/4', '\pi/3'});
-xlabel('Critical Angle')
-ylabel('Mean Coordination Number')
-title('Mean Coordination Number vs. Critical Angle')
+hold on
+scatter(repose_angles,avg_coordination_number_min);
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 26, 'LineWidth', 1.5)
+xline(mean(repose_angles),'--','\color{red}AR', 'FontSize', 26, 'LineWidth', 1.5)
+xlabel('Angle', 'FontSize', 26)
+ylabel('Mean Coordination Number', 'FontSize', 26)
+box on
 
+% Plot the centroid for the maxima and minima
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles) / sqrt(length(critical_angles));
+SEM_y = std(avg_coordination_number_max) / sqrt(length(avg_coordination_number_max));
+scatter(mean(critical_angles),mean(avg_coordination_number_max),'filled', 'blue', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles), mean(avg_coordination_number_max), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of average coordination number for maxima: %.4f\n', mean(avg_coordination_number_max));
+fprintf('Standard error of average coordination number for maxima: %.4f\n', SEM_y);
+
+SEM_x = std(repose_angles) / sqrt(length(repose_angles));
+SEM_y = std(avg_coordination_number_min) / sqrt(length(avg_coordination_number_min));
+scatter(mean(repose_angles),mean(avg_coordination_number_min),'filled', 'red', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(repose_angles), mean(avg_coordination_number_min), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of average coordination number for minima: %.4f\n', mean(avg_coordination_number_min));
+fprintf('Standard error of average coordination number for minima: %.4f\n', SEM_y);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+% Create the difference plot
+subplot(1,2,2)
+coordination_number_difference=[];
+for i=2:length(avg_coordination_number_max)
+    max_coordination_number=avg_coordination_number_max(i);
+    min_coordination_number=avg_coordination_number_min(i-1);
+    coordination_number_difference=[coordination_number_difference, max_coordination_number-min_coordination_number];
+end
+scatter(critical_angles(2:end),coordination_number_difference)
+xlabel('MSA', 'FontSize', 26)
+ylabel('Change in Mean Coordination Number', 'FontSize', 26)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 26,'LineWidth', 1.5)
+box on
+
+% Plot the centroid of the difference plot
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles(2:end)) / sqrt(length(critical_angles(2:end)));
+SEM_y = std(coordination_number_difference) / sqrt(length(coordination_number_difference));
+hold on
+scatter(mean(critical_angles(2:end)),mean(coordination_number_difference),'filled', 'black', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles(2:end)), mean(coordination_number_difference), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean change in average coordination number: %.4f\n', mean(coordination_number_difference));
+fprintf('Standard error for change in average coordination number: %.4f\n', SEM_y);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+sgtitle('Coordination Number','FontSize', 32)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Beta angle plots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plot mean beta angle vs. critical angle
+figure(2)
+subplot(1,2,1);
+scatter(critical_angles,avg_beta_max);
+hold on
+scatter(repose_angles,avg_beta_min);
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 26, 'LineWidth', 1.5)
+xline(mean(repose_angles),'--','\color{red}AR', 'FontSize', 26, 'LineWidth', 1.5)
+xlabel('Angle', 'FontSize', 26)
+ylabel('Mean Beta Angle', 'FontSize', 26)
+box on
+
+% Plot the centroid for the maxima and minima
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles) / sqrt(length(critical_angles));
+SEM_y = std(avg_beta_max) / sqrt(length(avg_beta_max));
+scatter(mean(critical_angles),mean(avg_beta_max),'filled', 'blue', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles), mean(avg_beta_max), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of average beta angle for maxima: %.4f\n', mean(avg_beta_max));
+fprintf('Standard error of average beta angle for maxima: %.4f\n', SEM_y);
+
+SEM_x = std(repose_angles) / sqrt(length(repose_angles));
+SEM_y = std(avg_beta_min) / sqrt(length(avg_beta_min));
+scatter(mean(repose_angles),mean(avg_beta_min),'filled', 'red', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(repose_angles), mean(avg_beta_min), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of average beta angle for minima: %.4f\n', mean(avg_beta_min));
+fprintf('Standard error of average beta angle for minima: %.4f\n', SEM_y);
+
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+% Create the difference plot
+subplot(1,2,2)
+beta_angle_difference=[];
+for i=2:length(avg_beta_max)
+    max_beta_angle=avg_beta_max(i);
+    min_beta_angle=avg_beta_min(i-1);
+    beta_angle_difference=[beta_angle_difference, max_beta_angle-min_beta_angle];
+end
+scatter(critical_angles(2:end),beta_angle_difference)
+xlabel('MSA', 'FontSize', 26)
+ylabel('Change in Mean Beta Angle', 'FontSize', 26)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 26, 'LineWidth', 1.5)
+box on
+
+% Plot the centroid of the difference plot
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles(2:end)) / sqrt(length(critical_angles(2:end)));
+SEM_y = std(beta_angle_difference) / sqrt(length(beta_angle_difference));
+hold on
+scatter(mean(critical_angles(2:end)),mean(beta_angle_difference),'filled', 'black', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles(2:end)), mean(beta_angle_difference), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of the change in average beta angle: %.4f\n', mean(beta_angle_difference));
+fprintf('Standard error of the change in average beta angle: %.4f\n', SEM_y);
+
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+sgtitle('Beta Angle','FontSize', 32)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Connected Components plots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plot number of connected components vs.angle
+figure(3)
+subplot(2,2,1);
+scatter(critical_angles,num_connected_components_max);
+hold on
+scatter(repose_angles,num_connected_components_min);
+ylabel('Number of Connected Components', 'FontSize', 26)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 26, 'LineWidth', 1.5)
+xline(mean(repose_angles),'--','\color{red}AR', 'FontSize', 26, 'LineWidth', 1.5)
+box on
+
+% Plot the centroid for the maxima and minima
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles) / sqrt(length(critical_angles));
+SEM_y = std(num_connected_components_max) / sqrt(length(num_connected_components_max));
+scatter(mean(critical_angles),mean(num_connected_components_max),'filled', 'blue', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles), mean(num_connected_components_max), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of num connected components for maxima: %.4f\n', mean(num_connected_components_max));
+fprintf('Standard error of num connected components for maxima: %.4f\n', SEM_y);
+
+SEM_x = std(repose_angles) / sqrt(length(repose_angles));
+SEM_y = std(num_connected_components_min) / sqrt(length(num_connected_components_min));
+scatter(mean(repose_angles),mean(num_connected_components_min),'filled', 'red', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(repose_angles), mean(num_connected_components_max), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of num connected components for minima: %.4f\n', mean(num_connected_components_min));
+fprintf('Standard error of num connected components for minima: %.4f\n', SEM_y);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+% Plot longest connected component vs.angle
+subplot(2,2,3);
+scatter(critical_angles,longest_connected_component_max);
+hold on
+scatter(repose_angles,longest_connected_component_min);
+xlabel('Angle', 'FontSize', 18)
+ylabel('Length of Longest Connected Component', 'FontSize', 26)
+xline(mean(critical_angles),'--', 'LineWidth', 1.5)
+xline(mean(repose_angles),'--', 'LineWidth', 1.5)
+
+box on
+
+% Plot the centroid for the maxima and minima
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles) / sqrt(length(critical_angles));
+SEM_y = std(longest_connected_component_max) / sqrt(length(longest_connected_component_max));
+scatter(mean(critical_angles),mean(longest_connected_component_max),'filled', 'blue', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles), mean(longest_connected_component_max), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of length of longest connected component for maxima: %.4f\n', mean(longest_connected_component_max));
+fprintf('Standard error of length of longest connected component for maxima: %.4f\n', SEM_y);
+
+SEM_x = std(repose_angles) / sqrt(length(repose_angles));
+SEM_y = std(longest_connected_component_min) / sqrt(length(longest_connected_component_min));
+scatter(mean(repose_angles),mean(longest_connected_component_min),'filled', 'red', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(repose_angles), mean(longest_connected_component_min), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of length of longest connected component for minima: %.4f\n', mean(longest_connected_component_min));
+fprintf('Standard error of length of longest connected component for minima: %.4f\n', SEM_y);
+
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+
+% Plot difference between number of connected components for frame before avalanche n
+% and coordination number for frame after avalanche n-1 vs. critical angle
+subplot(2,2,2)
+num_connected_components_difference=[];
+for i=2:length(num_connected_components_max)
+    max_num_connected_components=num_connected_components_max(i);
+    min_num_connected_components=num_connected_components_min(i-1);
+    num_connected_components_difference=[num_connected_components_difference, max_num_connected_components-min_num_connected_components];
+end
+scatter(critical_angles(2:end),num_connected_components_difference)
+ylabel('Change in Number of Connected Components', 'FontSize', 26)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 26, 'LineWidth', 1.5)
+
+
+box on
+
+% Plot the centroid of the difference plot
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles(2:end)) / sqrt(length(critical_angles(2:end)));
+SEM_y = std(num_connected_components_difference) / sqrt(length(num_connected_components_difference));
+hold on
+scatter(mean(critical_angles(2:end)),mean(num_connected_components_difference),'filled', 'black', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles(2:end)), mean(num_connected_components_difference), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of change in num connected components: %.4f\n', mean(num_connected_components_difference));
+fprintf('Standard error of change num connected components for minima: %.4f\n', SEM_y);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+% Plot difference between coordination number for frame before avalanche n
+% and coordination number for frame after avalanche n-1 vs. critical angle
+subplot(2,2,4)
+longest_connected_component_difference=[];
+for i=2:length(longest_connected_component_max)
+    max_longest_connected_component=longest_connected_component_max(i);
+    min_longest_connected_component=longest_connected_component_min(i-1);
+    longest_connected_component_difference=[longest_connected_component_difference, max_longest_connected_component-min_longest_connected_component];
+end
+scatter(critical_angles(2:end),longest_connected_component_difference)
+xlabel('MSA', 'FontSize', 26)
+ylabel('Change in Length of Longest Connected Component', 'FontSize', 26)
+xline(mean(critical_angles),'--', 'LineWidth', 1.5)
+
+box on
+
+% Plot the centroid of the difference plot
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles(2:end)) / sqrt(length(critical_angles(2:end)));
+SEM_y = std(longest_connected_component_difference) / sqrt(length(longest_connected_component_difference));
+hold on
+scatter(mean(critical_angles(2:end)),mean(longest_connected_component_difference),'filled', 'black', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles(2:end)), mean(longest_connected_component_difference), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean of change in length of longest connected component: %.4f\n', mean(longest_connected_component_difference));
+fprintf('Standard error of change length of longest connected component: %.4f\n', SEM_y);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+
+sgtitle('Connected Components','FontSize',32)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 3-cycle plots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Plot 3-cycle density vs.angle
+figure(4)
+subplot(2,2,1);
+scatter(critical_angles,three_cycle_density_max);
+hold on
+scatter(repose_angles,three_cycle_density_min);
+ylabel('3-Cycle Density', 'FontSize', 26)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 26, 'LineWidth', 1.5)
+xline(mean(repose_angles),'--','\color{red}AR', 'FontSize', 26, 'LineWidth', 1.5)
+
+box on
+
+% Plot the centroid for the maxima and minima
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles) / sqrt(length(critical_angles));
+SEM_y = std(three_cycle_density_max) / sqrt(length(three_cycle_density_max));
+scatter(mean(critical_angles),mean(three_cycle_density_max),'filled', 'blue', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles), mean(three_cycle_density_max), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean 3-cycle density for maxima: %.4f\n', mean(three_cycle_density_max));
+fprintf('Standard error of 3-cycle density for maxima: %.4f\n', SEM_y);
+
+
+SEM_x = std(repose_angles) / sqrt(length(repose_angles));
+SEM_y = std(three_cycle_density_min) / sqrt(length(three_cycle_density_min));
+scatter(mean(repose_angles),mean(three_cycle_density_min),'filled', 'red', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(repose_angles), mean(three_cycle_density_min), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+% Print the mean and std dev
+fprintf('Mean 3-cycle density for maxima: %.4f\n', mean(three_cycle_density_max));
+fprintf('Standard error of 3-cycle density for maxima: %.4f\n', SEM_y);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+% Plot longest connected component vs.angle
+subplot(2,2,3);
+scatter(critical_angles,mean_three_cycle_stability_max);
+hold on
+scatter(repose_angles,mean_three_cycle_stability_min);
+xlabel('Angle', 'FontSize', 18)
+ylabel('Mean 3-cycle Stability', 'FontSize', 26)
+xline(mean(critical_angles),'--', 'LineWidth', 1.5)
+xline(mean(repose_angles),'--', 'LineWidth', 1.5)
+
+box on
+
+% Plot the centroid for the maxima and minima
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles) / sqrt(length(critical_angles));
+SEM_y = std(mean_three_cycle_stability_max) / sqrt(length(mean_three_cycle_stability_max));
+scatter(mean(critical_angles),mean(mean_three_cycle_stability_max),'filled', 'blue', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles), mean(mean_three_cycle_stability_max), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+
+SEM_x = std(repose_angles) / sqrt(length(repose_angles));
+SEM_y = std(mean_three_cycle_stability_min) / sqrt(length(mean_three_cycle_stability_min));
+scatter(mean(repose_angles),mean(mean_three_cycle_stability_min),'filled', 'red', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(repose_angles), mean(mean_three_cycle_stability_min), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+
+% Plot difference between number of connected components for frame before avalanche n
+% and coordination number for frame after avalanche n-1 vs. critical angle
+subplot(2,2,2)
+three_cycle_density_difference=[];
+for i=2:length(three_cycle_density_max)
+    max_three_cycle_density=three_cycle_density_max(i);
+    min_three_cycle_density=three_cycle_density_min(i-1);
+    three_cycle_density_difference=[three_cycle_density_difference, max_three_cycle_density-min_three_cycle_density];
+end
+scatter(critical_angles(2:end),three_cycle_density_difference)
+ylabel('Change in 3-Cycle Density', 'FontSize', 26)
+xline(mean(critical_angles),'--','\color{blue}MSA', 'FontSize', 26, 'LineWidth', 1.5)
+
+box on
+
+% Plot the centroid of the difference plot
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles(2:end)) / sqrt(length(critical_angles(2:end)));
+SEM_y = std(three_cycle_density_difference) / sqrt(length(three_cycle_density_difference));
+hold on
+scatter(mean(critical_angles(2:end)),mean(three_cycle_density_difference),'filled', 'black', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles(2:end)), mean(three_cycle_density_difference), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+% Plot difference between 3-cycle stability for frame before avalanche n
+% and for frame after avalanche n-1 vs. critical angle
+subplot(2,2,4)
+three_cycle_stability_difference=[];
+for i=2:length(mean_three_cycle_stability_max)
+    max_three_cycle_stability=mean_three_cycle_stability_max(i);
+    min_three_cycle_stability=mean_three_cycle_stability_min(i-1);
+    three_cycle_stability_difference=[three_cycle_stability_difference, max_three_cycle_stability-min_three_cycle_stability];
+end
+scatter(critical_angles(2:end),three_cycle_stability_difference)
+xlabel('MSA', 'FontSize', 26)
+ylabel('Change in Mean 3-cycle Stability', 'FontSize', 26)
+xline(mean(critical_angles),'--', 'LineWidth', 1.5)
+
+box on
+
+% Plot the centroid of the difference plot
+% Calculate standard error of the mean for x and y coordinates of the centroid
+SEM_x = std(critical_angles(2:end)) / sqrt(length(critical_angles(2:end)));
+SEM_y = std(three_cycle_stability_difference) / sqrt(length(three_cycle_stability_difference));
+hold on
+scatter(mean(critical_angles(2:end)),mean(three_cycle_stability_difference),'filled', 'black', 'SizeData', 125)
+% Add error bars to the centroid
+errorbar(mean(critical_angles(2:end)), mean(three_cycle_stability_difference), ...
+    SEM_y, SEM_y, SEM_x, SEM_x, 'k', 'LineStyle', 'none', 'LineWidth', 1);
+
+% Set the font size of the tick labels
+ax = gca;
+set(ax, 'FontSize', 20);
+
+hold off
+
+
+sgtitle('3-Cycles','FontSize',32)
+
+
+
+%{
 % Plot mean beta angle vs.critical angle
 figure(2)
 scatter(critical_angles,avg_beta_max);
@@ -401,7 +892,7 @@ title('mean 3-cycle stability vs. Critical Angle')
 figure(8)
 scatter(critical_angles,avg_coordination_number_max);
 hold on
-scatter(repose_angles,avg_coordination_number_min,c='red');
+scatter(repose_angles,avg_coordination_number_min);
 xlabel('Critical Angle')
 ylabel('Mean Coordination Number')
 title('Mean Coordination Number vs. Critical Angle')
@@ -412,7 +903,7 @@ hold off
 figure(9)
 scatter(critical_angles,avg_beta_max);
 hold on
-scatter(repose_angles,avg_beta_min,c='red');
+scatter(repose_angles,avg_beta_min);
 xlabel('Critical Angle')
 ylabel('Mean Beta Angle')
 title('Mean Beta Angle vs. Critical Angle')
@@ -423,7 +914,7 @@ hold off
 figure(10)
 scatter(critical_angles,avg_alpha_max);
 hold on
-scatter(repose_angles,avg_alpha_min,c='red');
+scatter(repose_angles,avg_alpha_min);
 xlabel('Critical Angle')
 ylabel('Mean Alpha Angle')
 title('Mean Alpha Angle vs. Critical Angle')
@@ -434,7 +925,7 @@ hold off
 figure(11)
 scatter(critical_angles,num_connected_components_max);
 hold on
-scatter(repose_angles,num_connected_components_min,c='red');
+scatter(repose_angles,num_connected_components_min);
 xlabel('Critical Angle')
 ylabel('Number of Connected Components')
 title('Number of Connected Components vs. Critical Angle')
@@ -445,7 +936,7 @@ hold off
 figure(12)
 scatter(critical_angles,longest_connected_component_max);
 hold on
-scatter(repose_angles,longest_connected_component_min,c=);
+scatter(repose_angles,longest_connected_component_min);
 xlabel('Critical Angle')
 ylabel('Longest Connected Component')
 title('Longest Connected Component vs. Critical Angle')
@@ -468,7 +959,7 @@ hold off
 figure(14)
 scatter(critical_angles,three_cycle_density_max);
 hold on
-scatter(critical_angles,three_cycle_density_min);
+scatter(repose_angles,three_cycle_density_min);
 xlabel('Critical Angle')
 ylabel('3-cycle density')
 title('3-cycle density vs. Critical Angle')
@@ -479,7 +970,7 @@ hold off
 figure(15)
 scatter(critical_angles,mean_three_cycle_stability_max);
 hold on
-scatter(critical_angles,mean_three_cycle_stability_min);
+scatter(repose_angles,mean_three_cycle_stability_min);
 xlabel('Critical Angle')
 ylabel('mean 3-cycle stability')
 title('mean 3-cycle stability vs. Critical Angle')
@@ -557,7 +1048,7 @@ ylabel('Difference in Length of Longest Connected Component')
 title('Length of Longest Connected Component Difference vs. Critical Angle')
 
 % Plot difference between 3-cycle density for frame before avalanche n
-% and alpha for frame after avalanche n-1 vs. critical angle
+% and for frame after avalanche n-1 vs. critical angle
 three_cycle_density_difference=[];
 for i=2:length(three_cycle_density_max)
     max_three_cycle_density=three_cycle_density_max(i);
@@ -570,16 +1061,17 @@ xlabel('Critical Angle of Avalanche n')
 ylabel('Difference in 3-cycle density')
 title('3-cycle density Difference vs. Critical Angle')
 
-% Plot difference between 3-cycle density for frame before avalanche n
-% and alpha for frame after avalanche n-1 vs. critical angle
+% Plot difference between 3-cycle stability for frame before avalanche n
+% and for frame after avalanche n-1 vs. critical angle
 three_cycle_stability_difference=[];
 for i=2:length(mean_three_cycle_stability_max)
     max_three_cycle_stability=mean_three_cycle_stability_max(i);
     min_three_cycle_stability=mean_three_cycle_stability_min(i-1);
     three_cycle_stability_difference=[three_cycle_stability_difference, max_three_cycle_stability-min_three_cycle_stability];
 end
-figure(14)
+figure(22)
 scatter(critical_angles(2:end),three_cycle_stability_difference)
 xlabel('Critical Angle of Avalanche n')
 ylabel('Difference in mean 3-cycle stability')
 title('Mean 3-cycle stability Difference vs. Critical Angle')
+%}
